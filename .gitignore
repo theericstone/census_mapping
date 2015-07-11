@@ -2,4 +2,4 @@
 *.Rhistory
 *.RData
 *.Rproj
-*.csv
+*.DS_Store
