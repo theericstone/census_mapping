@@ -19,10 +19,58 @@
 
 library(data.table)
 library(stringr)
+library(RColorBrewer)
+library(maptools)
+library(rgdal)
 
-naics <- data.table(read.csv("data/county_naicssectors_2011.csv"))
+naics <- data.table(read.csv("data/county_naicssectors_2011.csv", stringsAsFactors = FALSE))
 
 #get rid of US totals
-naics <- naics[ !description == "State Total" ]
+naics <- naics[ !description == "State Total" & !is.na(naics_code)]
 
 naics[ county_code ==  999 ]
+
+naics.counts <- naics[county_code == 999, list(N = sum(as.numeric(establishments_2011), na.rm = TRUE)), by="naics_description,state_code"]
+setkey(naics.counts, state_code, N)
+naics.counts[, rank := .N:1, by = state_code]
+unique(naics.counts[rank == 1]$naics_description)
+
+naics.counts.cnty <- naics[county_code != 999, list(N = sum(as.numeric(establishments_2011))), by="naics_description,state_code,county_code"]
+setkey(naics.counts.cnty, county_code, N)
+naics.counts.cnty[, rank := .N:1, by = "state_code,county_code"]
+unique(naics.counts.cnty[rank == 1]$naics_description)
+
+
+cnty.colors <- data.table(color = c(brewer.pal(n = 12, "Set3"), brewer.pal(n = 9, "Set1")[1:7]),
+                          naics_description = arrange(naics.counts.cnty[rank == 1, .N, by = "naics_description"], N, decreasing = TRUE)$naics_description)
+
+cnty.most.pop <- merge(naics.counts.cnty[rank == 1], cnty.colors, by = "naics_description")
+
+county.shp <- readShapePoly("shapefiles/county_wgs84.shp")
+
+cnty.shp.data <- data.table(county.shp@data)
+cnty.shp.data[, state_code := as.numeric(as.character(STATEFP))]
+cnty.shp.data[, county_code := as.numeric(as.character(COUNTYFP))]
+
+
+cnty.most.pop <- merge(cnty.most.pop, cnty.shp.data[, list(state_code, county_code)], by = c("state_code", "county_code"), all = TRUE)
+cnty.most.pop[is.na(naics_description), naics_description := "No Data"]
+cnty.most.pop[is.na(color), color := "grey50"]
+cnty.most.pop[, GEOID := paste0(sprintf("%02.0f", state_code), sprintf("%03.0f", county_code))]
+
+#merge in state and county names! duh duh duhhh
+cnty.most.pop <- merge(cnty.most.pop, 
+                       unique(naics[, list(state_code, state_name, county_code, county_name = description)]), 
+                       by = c("state_code", "county_code"))
+
+
+cnty.shp.ann <- JoinSpDf(x = county.shp, 
+                         y = cnty.most.pop[, list(GEOID, state_code, county_code, state_name, county_name, naics_description, color)], 
+                         xcol = "GEOID", ycol = "GEOID")
+
+
+
+writeOGR(cnty.shp.ann, "county_data", "county_data", driver = "GeoJSON")
+
+
+
