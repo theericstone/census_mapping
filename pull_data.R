@@ -22,6 +22,7 @@ library(stringr)
 library(RColorBrewer)
 library(maptools)
 library(rgdal)
+library(plyr)
 
 naics <- data.table(read.csv("data/county_naicssectors_2011.csv", stringsAsFactors = FALSE))
 
@@ -52,7 +53,6 @@ cnty.shp.data <- data.table(county.shp@data)
 cnty.shp.data[, state_code := as.numeric(as.character(STATEFP))]
 cnty.shp.data[, county_code := as.numeric(as.character(COUNTYFP))]
 
-
 cnty.most.pop <- merge(cnty.most.pop, cnty.shp.data[, list(state_code, county_code)], by = c("state_code", "county_code"), all = TRUE)
 cnty.most.pop[is.na(naics_description), naics_description := "No Data"]
 cnty.most.pop[is.na(color), color := "grey50"]
@@ -69,8 +69,40 @@ cnty.shp.ann <- JoinSpDf(x = county.shp,
                          xcol = "GEOID", ycol = "GEOID")
 
 
-
 writeOGR(cnty.shp.ann, "county_data", "county_data", driver = "GeoJSON")
 
+#load states shapefile
+state.shp <- readShapePoly("shapefiles/states_wgs84.shp")
 
+#merge in the top industry from each state
+state.most.pop <- naics.counts[rank == 1]
+
+#define colors
+state.colors <- data.table(color = brewer.pal(n = 5, "Set3"),
+                          naics_description = arrange(state.most.pop[, .N, by = "naics_description"], N, decreasing = TRUE)$naics_description)
+
+state.most.pop <- merge(state.most.pop, state.colors, by = "naics_description")
+
+#cross check with shapefile data to assign grey color to missing
+state.shp.data <- data.table(state.shp@data)
+state.shp.data[, state_code := as.numeric(as.character(STATEFP))]
+
+state.most.pop <- merge(state.most.pop, state.shp.data[, list(state_code)], by = c("state_code"), all = TRUE)
+state.most.pop[is.na(naics_description), naics_description := "No Data"]
+state.most.pop[is.na(color), color := "grey50"]
+
+#define geoid to make merge work
+state.most.pop[, GEOID := paste0(sprintf("%02.0f", state_code))]
+
+#merge in state name
+state.most.pop <- merge(state.most.pop, 
+                        unique(naics[, list(state_code, state_name)]), 
+                        by = c("state_code"))
+
+state.shp.ann <- JoinSpDf(x = state.shp, 
+                          y = state.most.pop[, list(GEOID, state_code, state_name, naics_description, color)], 
+                          xcol = "GEOID", ycol = "GEOID")
+
+
+writeOGR(state.shp.ann, "state_data", "state_data", driver = "GeoJSON")
 
