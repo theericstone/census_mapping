@@ -11,27 +11,10 @@
 </style>
 </head>
 <body>
+
 <div id='map'></div>
 
 <style>
-/*
-.map-legend .swatch {
-  width:20px;
-  height:20px;
-  float:left;
-  margin-right:10px;
-  }
-*/
-.legend label,
-.legend span {
-  display:block;
-  float:left;
-  height:25px;
-  width:10px;
-  text-align:left;
-  font-size:9px;
-  color:#808080;
-  }
     
 .leaflet-popup-close-button {
   display: none;
@@ -65,10 +48,12 @@
 }
 
 </style>
+
 <script src='state_data.js'></script>
 <script>
   var mapboxAccessToken = 'pk.eyJ1IjoiYW5taW5zIiwiYSI6Ik9SZ3dyMjAifQ.2KVz9-1BSP3AF_s_Sx02ig';
   var map = L.map('map').setView([37.8, -96], 4);
+    
 
   L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=' + mapboxAccessToken, {
       id: 'mapbox.light'
@@ -102,6 +87,29 @@
 
     info.addTo(map);
 
+//    function getColor(d) {
+//        return 
+//            d = 'Retail trade' ? '#8DD3C7' :
+//            d = 'Construction' ? '#FFFFB3' :
+//            d = 'Other services (except public administration)' ? '#BEBADA :
+//            d = 'Accommodation and food services' ? '#FB8072' :
+//            d = 'Health care and social assistance' ? '#80B1D3' :
+//            d = 'Professional, scientific, and technical services' ? '#FDB462 :
+//            d = 'Manufacturing' ? '#B3DE69' :
+//            d = 'Mining, quarrying, and oil and gas extraction' ? '#FCCDE5 :
+//            d = 'Finance and insurance' ? '#D9D9D9' :
+//            d = 'Transportation and warehousing' ? '#BC80BD' :
+//            d = 'Wholesale trade' ? '#CCEBC5' :
+//            d = 'Administrative and support and waste management and remediation services' ? '#FFED6F' :
+//            d = 'Real estate and rental and leasing' ? '#E41A1C' :
+//            d = 'Information' ? '#377EB8' :
+//            d = 'Industries not classified' ? '#4DAF4A' :
+//            d = 'Educational services' ? '#984EA3' :         
+//            d = 'Management of companies and enterprises' ? '#FF7F00' :
+//            d = 'Arts, entertainment, and recreation' ? '#FFFF33' :
+//            d = 'Agriculture, forestry, fishing and hunting' ? '#A65628' ;
+//    }
+       
     function highlightFeature(e) {
       var layer = e.target;
 
@@ -144,30 +152,32 @@
     }).addTo(map);
 
     map.attributionControl.addAttribution('Population data &copy; <a href="http://census.gov/">US Census Bureau</a>');
-
+    
 //    var legend = L.control({position: 'bottomright'});
 //
-//    legend.onAdd = function (map) {
+//		legend.onAdd = function (map) {
 //
-//       var div = L.DomUtil.create('div', 'info legend'),
-//         grades = [0, 10, 20, 50, 100, 200, 500, 1000],
-//         labels = [],
-//         from, to;
+//			var div = L.DomUtil.create('div', 'info legend'),
+//				grades = function (a, d) {
+//                 if (a.indexOf(d.naics_description) === -1) {
+//                     a.push(d.naics_description);
+//                    }
+//                    return a;
+//                }, [],
+//				labels = [];
 //
-//       for (var i = 0; i < grades.length; i++) {
-//         from = grades[i];
-//         to = grades[i + 1];
+//			for (var i = 0; i < grades.length; i++) {
+//				labels.push(
+//					'<i style="background:' + getColor(i) + '"></i> '
+//                );
+//			}
 //
-//         labels.push(
-//           '<i style="background:' + getColor(from + 1) + '"></i> ' +
-//           from + (to ? '&ndash;' + to : '+'));
-//       }
+//			div.innerHTML = labels.join('<br>');
+//			return div;
+//		};
 //
-//       div.innerHTML = labels.join('<br>');
-//       return div;
-//     };
+//    legend.addTo(map);
 
-    map.legendControl.addLegend(document.getElementById('legend').innerHTML);
 </script>
 </body>
 </html>
